@@ -1,0 +1,48 @@
+provider "aws" {
+  region = "us-west-2"  # Replace with your desired region
+}
+
+locals {
+  vpc_id = "vpc-0dd2a14e052b80c54"  # Replace with your VPC ID
+  azs    = ["us-west-2a", "us-west-2b", "us-west-2c"]  # Replace with your desired availability zones
+}
+
+
+# Create subnets, NAT gateway, and route table
+resource "aws_subnet" "private" {
+  count             = length(local.azs)
+  vpc_id            = local.vpc_id
+  cidr_block        = "172.31.${count.index + 69}.0/24"
+  availability_zone = local.azs[count.index]
+
+  tags = {
+    "kubernetes.io/role/internal-elb" = "1"
+  }
+}
+
+resource "aws_nat_gateway" "nat_gateway" {
+  allocation_id = aws_eip.nat_eip.id
+  subnet_id     = aws_subnet.private[0].id  # Replace with the desired subnet ID
+
+}
+
+resource "aws_eip" "nat_eip" {
+  vpc = true
+}
+
+resource "aws_route_table_association" "private_subnet_association" {
+  count             = length(aws_subnet.private)
+  subnet_id         = aws_subnet.private[count.index].id
+  route_table_id    = aws_route_table.private_subnet_route_table.id
+  depends_on        = [aws_nat_gateway.nat_gateway]
+}
+
+resource "aws_route_table" "private_subnet_route_table" {
+  vpc_id = local.vpc_id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_nat_gateway.nat_gateway.id
+  }
+}
+
