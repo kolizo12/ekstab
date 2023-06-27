@@ -80,13 +80,10 @@ locals {
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 19.15.3"
-  ######
-  # Addons-enable section
   cluster_name                   = local.name
   cluster_endpoint_public_access = true
   cluster_endpoint_private_access = true
   cluster_version     = "1.27"
-  enable_irsa = true
   
   vpc_id              = local.vpc_id
   subnet_ids          = aws_subnet.private[*].id
@@ -289,6 +286,7 @@ module "eks_blueprints_addons" {
   }
 
   enable_aws_load_balancer_controller    = true
+  enable_irsa = true
   enable_metrics_server                  = true
   enable_external_dns                    = true
   enable_kube_prometheus_stack           = true
