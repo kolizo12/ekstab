@@ -83,6 +83,7 @@ module "eks" {
   cluster_name                   = local.name
   cluster_endpoint_public_access = true
   cluster_endpoint_private_access = true
+  enable_irsa = true
   cluster_version     = "1.27"
   
   vpc_id              = local.vpc_id
@@ -286,7 +287,6 @@ module "eks_blueprints_addons" {
   }
 
   enable_aws_load_balancer_controller    = true
-  enable_irsa = true
   enable_metrics_server                  = true
   enable_external_dns                    = true
   enable_kube_prometheus_stack           = true

@@ -1,7 +1,7 @@
 module "eks_module" {
   source   = "../module"
   eks_name = var.eks_name
-  vpc_id    = var.vpc_id
+  vpc_id   = var.vpc_id
 
 }
 
