@@ -80,11 +80,14 @@ locals {
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 19.15.3"
+  ######
+  # Addons-enable section
   cluster_name                   = local.name
   cluster_endpoint_public_access = true
   cluster_endpoint_private_access = true
   cluster_version     = "1.27"
   enable_irsa = true
+  
   vpc_id              = local.vpc_id
   subnet_ids          = aws_subnet.private[*].id
 
@@ -259,3 +262,37 @@ resource "aws_route_table" "private_subnet_route_table" {
   }
 }
 
+##########
+#eks addons section
+####
+module "eks_blueprints_addons" {
+  source = "aws-ia/eks-blueprints-addons/aws"
+
+  cluster_name      = module.eks.cluster_name
+  cluster_endpoint  = module.eks.cluster_endpoint
+  cluster_version   = module.eks.cluster_version
+  oidc_provider_arn = module.eks.oidc_provider_arn
+
+  eks_addons = {
+    aws-ebs-csi-driver = {
+      most_recent = true
+    }
+    coredns = {
+      most_recent = true
+    }
+    vpc-cni = {
+      most_recent = true
+    }
+    kube-proxy = {
+      most_recent = true
+    }
+  }
+
+  enable_aws_load_balancer_controller    = true
+  enable_metrics_server                  = true
+  enable_external_dns                    = true
+  enable_kube_prometheus_stack           = true
+  enable_karpenter                       = true
+  enable_cluster_autoscaler = true
+  enable_vpa            = true
+}
