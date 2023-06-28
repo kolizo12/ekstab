@@ -208,18 +208,40 @@ module "eks_blueprints_dev_teams" {
 ################################################################################
 
 resource "aws_subnet" "public" {
-  count             = length(local.azs)
   vpc_id            = local.vpc_id
-  cidr_block        = "172.31.${count.index + 64}.0/24"
-  availability_zone = local.azs[count.index]
+  cidr_block        = "172.31.64.0/24"
+  availability_zone = local.azs[0]
   map_public_ip_on_launch = true
 
   tags = {
     "kubernetes.io/role/elb" = 1,
     "kubernetes.io/cluster/${local.name}" = "owned"
+    "Name" = "Public_subnet_${local.name}_1"
   }
 }
 
+data "aws_internet_gateway" "default" {
+  filter {
+    name   = "attachment.vpc-id"
+    values = [var.vpc_id]
+  }
+}
+
+resource "aws_route_table" "public1" {
+  vpc_id = local.vpc_id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = data.aws_internet_gateway.default.id
+  }
+
+  tags = local.tags
+}
+
+resource "aws_route_table_association" "public_subnet" {
+  subnet_id      = aws_subnet.public.id
+  route_table_id = aws_route_table.public1.id
+}
 
 # Create subnets, NAT gateway, and route table
 resource "aws_subnet" "private" {
@@ -231,12 +253,13 @@ resource "aws_subnet" "private" {
   tags = {
     "kubernetes.io/role/internal-elb" = "1",
     "kubernetes.io/cluster/${local.name}" = "owned"
+    "Name" = "Private_subnet_${local.name}_${count.index + 1}"
   }
 }
 
 resource "aws_nat_gateway" "nat_gateway" {
   allocation_id = aws_eip.nat_eip.id
-  subnet_id     = aws_subnet.public[0].id  # Replace with the desired subnet ID
+  subnet_id     = aws_subnet.public.id  # Replace with the desired subnet ID
 
 }
 
@@ -263,6 +286,7 @@ resource "aws_route_table" "private_subnet_route_table" {
 ##########
 #eks addons section
 ####
+/*
 module "eks_blueprints_addons" {
   source = "aws-ia/eks-blueprints-addons/aws"
 
@@ -294,3 +318,4 @@ module "eks_blueprints_addons" {
   enable_cluster_autoscaler = true
   enable_vpa            = true
 }
+*/
